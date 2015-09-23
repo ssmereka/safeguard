@@ -7,10 +7,15 @@
   },
   "contributors": [],
   "dependencies": {
-    "lodash": "3.10.1"
+    "lodash": "3.10.1",
+    "seedio-log": "git+https://github.com/livio/seedio-log.git#HEAD"
   },
-  "description": "Encapsulate and secure credentials easily with this wrapper for the node.js crypto library.",
+  "description": "Safeguard makes cryptography easier in node.js by adding helpful functionality and simplifying the already existing crypto library.",
   "devDependencies": {
+    "codecov.io": "^0.1.6",
+    "istanbul": "^0.3.20",
+    "mocha": "^2.3.3",
+    "should": "^7.1.0"
   },
   "engines": {
     "node": ">=0.10"

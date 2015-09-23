@@ -46,12 +46,12 @@ var Safeguard = function(config, log, error) {
  * ******************** Getters and Setters
  * ************************************************** */
 
-var setConfig = function(config) {
+Safeguard.prototype.setConfig = function(config) {
   this.config = config || {
     crypto: {
       iterations: 10000,
-      keySize: 64,
-      saltSize: 64
+      keyLength: 64,
+      saltLength: 64
     },
     libsDirectory: "./",
     log: {
@@ -65,21 +65,28 @@ var setConfig = function(config) {
   };
 };
 
-var setLog = function(log) {
+Safeguard.prototype.setLog = function(log) {
   if(log) {
     this.log = log;
   } else {
-    this.log = new (require('seedio-log'))({
-      mongoose: mongoose,
-      debug: config.log.debug,
-      trace: config.log.trace,
-      error: config.log.error,
-      name: config.server.name,
-      databaseLog: config.server.databaseLog});
+    var seedioLog;
+    try {
+      seedioLog = require('seedio-log');
+      this.log = new (seedioLog)({
+        mongoose: this.config.log.mongoose,
+        debug: this.config.log.debug,
+        trace: this.config.log.trace,
+        error: this.config.log.error,
+        name: this.config.name,
+        databaseLog: this.config.databaseLog});
+    } catch(err) {
+      console.log('Error initializing the local library dependencies.  Do you need to run npm install?');
+      throw err;
+    }
   }
 };
 
-var setError = function(error) {
+Safeguard.prototype.setError = function(error) {
   if(error) {
     this.error = error;
   } else {
@@ -106,10 +113,10 @@ var setError = function(error) {
  * to be converted to a string.
  * @returns {string} the hash packet string.
  */
-var hashPacketObjectToString = function(hashPacketObject) {
-  return hashPacketObject.keySize + ","
+Safeguard.prototype.hashPacketObjectToString = function(hashPacketObject) {
+  return hashPacketObject.keyLength + ","
     + hashPacketObject.iterations + ","
-    + hashPacketObject.saltSize + ","
+    + hashPacketObject.saltLength + ","
     + hashPacketObject.salt
     + hashPacketObject.hash;
 };
@@ -120,9 +127,11 @@ var hashPacketObjectToString = function(hashPacketObject) {
  * all of the hash packet information in a csv format.
  * @param {hashPacketObjectCallback} cb is a callback method
  */
-var hashPacketStringToObject = function(hashPacketString, cb) {
+Safeguard.prototype.hashPacketStringToObject = function(hashPacketString, cb) {
+  var safeguard = this;
+
   // Create the default object using values from the config file.
-  var obj = createDefaultHashPacket();
+  var obj = safeguard.createDefaultHashPacket();
 
   // If the hashPacketString is defined, then the hash string values
   // will overwrite the defaults.
@@ -134,14 +143,14 @@ var hashPacketStringToObject = function(hashPacketString, cb) {
 
     // If the hash packet string does not have at least 5
     // items separated by commas then it is invalid.
-    if(hashPacketItems.length < 5) {
-      cb(error.build("Invalid Hash Packet:  Expected 5 items, but only "+hashPacketItems+" were found.  Returning default hash packet.", 500), obj);
+    if(hashPacketItems.length < 4) {
+      cb(safeguard.error.build("Invalid Hash Packet:  Expected 5 items, but only "+hashPacketItems+" were found.  Returning default hash packet.", 500), obj);
     } else {
 
-      // Key size is the first parameter representing how long the
+      // Key length is the first parameter representing how long the
       // hash value will be.  Remember that since we are storing the
       // hash values as hex, they will actually be double the size.
-      obj.keySize = Number(hashPacketItems[0]);
+      obj.keyLength = Number(hashPacketItems[0]);
       headerLength += hashPacketItems[0].length;
 
       // Iterations is the second parameter representing how many
@@ -149,17 +158,17 @@ var hashPacketStringToObject = function(hashPacketString, cb) {
       obj.iterations = Number(hashPacketItems[1]);
       headerLength += hashPacketItems[1].length;
 
-      // Salt size is the third parameter representing how long the
+      // Salt length is the third parameter representing how long the
       // salt value will be.  Remember that since we are storing the
       // salt values as hex, they will actually be double the size.
-      obj.saltSize = Number(hashPacketItems[2]);
+      obj.saltLength = Number(hashPacketItems[2]);
       headerLength += hashPacketItems[2].length;
 
       // Salt is the fourth parameter and should be double the length of the salt string length.
-      obj.salt = hashPacketString.substring(headerLength, headerLength + (obj.saltSize * 2));
+      obj.salt = hashPacketString.substring(headerLength, headerLength + obj.saltLength);
 
       // Hash is the final parameter and should be double the length of the key string length.
-      obj.hash = hashPacketString.substring(headerLength + (obj.keySize * 2));
+      obj.hash = hashPacketString.substring(headerLength + obj.saltLength);
 
       cb(undefined, obj);
     }
@@ -171,13 +180,13 @@ var hashPacketStringToObject = function(hashPacketString, cb) {
  * server configuration object.
  * @returns {object} a hash packet object.
  */
-var createDefaultHashPacket = function() {
+Safeguard.prototype.createDefaultHashPacket = function() {
   return {
     hash: '',
     iterations: this.config.crypto.iterations,
-    keySize: this.config.crypto.keySize,
+    keyLength: this.config.crypto.keyLength,
     salt: '',
-    saltSize: this.config.crypto.saltSize
+    saltLength: this.config.crypto.saltLength
   };
 };
 
@@ -187,9 +196,11 @@ var createDefaultHashPacket = function() {
  * @param {string} text is the plain text to be hashed.
  * @param {hashCallback} cb is a callback method.
  */
-var hasher = function(text, cb) {
+Safeguard.prototype.hasher = function(text, cb) {
+  var safeguard = this;
+
   // Create a hash packet with the default values.
-  var hashPacket = createDefaultHashPacket();
+  var hashPacket = this.createDefaultHashPacket();
 
   // If the text is invalid (undefined, null, false, 0, or ""), then create a random string to hash.
   if( ! text) {
@@ -197,12 +208,12 @@ var hasher = function(text, cb) {
   }
 
   // Generate a new salt if one does not exist.
-  if( ! hashPacket.salt === undefined) {
-    hashPacket.salt = createRandomStringSync(hashPacket.saltSize).toString('hex');
+  if( ! hashPacket.salt) {
+    hashPacket.salt = safeguard.createRandomStringSync(hashPacket.saltLength/2).toString('hex');
   }
 
   // Hash the plain text using the hashPacket settings.
-  crypto.pbkdf2(text, hashPacket.salt, hashPacket.iterations, hashPacket.keySize, function(err, hash) {
+  crypto.pbkdf2(text, hashPacket.salt, hashPacket.iterations, hashPacket.keyLength, function(err, hash) {
     if(err) {
       cb(err);
     } else {
@@ -210,7 +221,7 @@ var hasher = function(text, cb) {
       hashPacket.hash = hash.toString('hex');
 
       // Return the hash packet as a string.
-      cb(undefined, hashPacketObjectToString(hashPacket));
+      cb(undefined, safeguard.hashPacketObjectToString(hashPacket));
     }
   });
 };
@@ -221,18 +232,18 @@ var hasher = function(text, cb) {
  * @param {string} hashPacketString is the hashed string.
  * @param {hashCompareCallback} cb is a callback method.
  */
-var compareToHash = function(text, hashPacketString, cb) {
+Safeguard.prototype.compareToHash = function(text, hashPacketString, cb) {
   // If the plain text is invalid, then return false.
   if( ! text) {
     cb(undefined, false);
   } else {
     // Create a hash packet object from the string.
-    hashPacketStringToObject(hashPacketString, function(err, hashPacket) {
+    this.hashPacketStringToObject(hashPacketString, function(err, hashPacket) {
       if(err) {
         cb(err);
       } else {
         // Encrypt the plain text using the same parameters as the stored hash.
-        crypto.pbkdf2(text, hashPacket.salt, hashPacket.iterations, hashPacket.keySize, function(err, hash) {
+        crypto.pbkdf2(text, hashPacket.salt, hashPacket.iterations, hashPacket.keyLength, function(err, hash) {
           if(err || ! hash) {
             cb(err, false);
           } else {
@@ -251,7 +262,7 @@ var compareToHash = function(text, hashPacketString, cb) {
  * @param {number|undefined} length is the length of the random string.
  * @returns {string} a random string of the given length.
  */
-var createRandomStringSync = function(length) {
+Safeguard.prototype.createRandomStringSync = function(length) {
   var text;
   try {
     text = crypto.randomBytes(length || 256);
@@ -264,18 +275,9 @@ var createRandomStringSync = function(length) {
 };
 
 
-
 /* ************************************************** *
- * ******************** Public API
+ * ******************** Expose the Public API
  * ************************************************** */
-
-Safeguard.prototype.hasher = hasher;
-Safeguard.prototype.compareToHash = compareToHash;
-Safeguard.prototype.createRandomStringSync = createRandomStringSync;
-
-Safeguard.prototype.setLog = setLog;
-Safeguard.prototype.setConfig = setConfig;
-Safeguard.prototype.setError = setError;
 
 exports = module.exports = Safeguard;
 exports = Safeguard;
