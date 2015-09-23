@@ -53,7 +53,6 @@ Safeguard.prototype.setConfig = function(config) {
       keyLength: 64,
       saltLength: 64
     },
-    libsDirectory: "./",
     log: {
       error: true,
       databaseLog: false,
@@ -200,11 +199,11 @@ Safeguard.prototype.hasher = function(text, cb) {
   var safeguard = this;
 
   // Create a hash packet with the default values.
-  var hashPacket = this.createDefaultHashPacket();
+  var hashPacket = safeguard.createDefaultHashPacket();
 
   // If the text is invalid (undefined, null, false, 0, or ""), then create a random string to hash.
   if( ! text) {
-    text = createRandomStringSync(this.config.crypto.plainTextSize)
+    text = safeguard.createRandomStringSync(safeguard.config.crypto.plainTextSize)
   }
 
   // Generate a new salt if one does not exist.

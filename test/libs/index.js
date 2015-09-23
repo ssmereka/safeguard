@@ -34,7 +34,7 @@ var safeguardConfig = {
  * ******************** Private Methods
  * ************************************************** */
 
-var validateHashPacketString = function(hashPacketString, text, cb) {
+var validateHashPacketString = function(hashPacketString, text, cb, shouldNotMatch) {
   // Should be a valid string.
   assert.equal( ! hashPacketString && _.isString(hashPacketString), false);
 
@@ -63,7 +63,7 @@ var validateHashPacketString = function(hashPacketString, text, cb) {
       safeguard.compareToHash(text, hashPacketString, function(err, isMatch) {
         if(err) {
           cb(err);
-        } else if( ! isMatch) {
+        } else if( ! isMatch && ! shouldNotMatch) {
           cb(new Error("Text does not match the hashed value."));
         } else {
           cb();
@@ -112,7 +112,7 @@ describe('Safeguard', function() {
         if(err) {
           done(err);
         } else {
-          validateHashPacketString(hashPacketString, password, done, config.crypto);
+          validateHashPacketString(hashPacketString, password, done);
         }
       });
     });
@@ -131,7 +131,7 @@ describe('Safeguard', function() {
         if(err) {
           done(err);
         } else {
-          validateHashPacketString(hashPacketString, password, done, config.crypto);
+          validateHashPacketString(hashPacketString, password, done);
         }
       });
     });
@@ -150,7 +150,28 @@ describe('Safeguard', function() {
         if(err) {
           done(err);
         } else {
-          validateHashPacketString(hashPacketString, password, done, config.crypto);
+          validateHashPacketString(hashPacketString, password, done);
+        }
+      });
+    });
+
+    it('should generate a hash even when text is undefined', function(done) {
+      safeguard.hasher(undefined, function(err, hashPacketString) {
+        if(err) {
+          done(err);
+        } else {
+          // Validate the hash packet, but the hash values should not match.
+          validateHashPacketString(hashPacketString, password, done, true);
+        }
+      });
+    });
+
+    it('should generate a hash even when text is blank', function(done) {
+      safeguard.hasher("", function(err, hashPacketString) {
+        if(err) {
+          done(err);
+        } else {
+          validateHashPacketString(hashPacketString, password, done, true);
         }
       });
     });

@@ -4,11 +4,7 @@
 
 <a href="https://travis-ci.org/ssmereka/safeguard" target="_blank"><img src="https://travis-ci.org/ssmereka/safeguard.svg" /></a> <a href="https://david-dm.org/ssmereka/safeguard" target="_blank"><img src="https://david-dm.org/ssmereka/safeguard.svg" /></a> <a href="https://gratipay.com/ScottSmereka/" target="_blank"><img src="http://img.shields.io/gratipay/ScottSmereka.svg" /> <a href="https://codecov.io/github/ssmereka/safeguard?branch=master" target="_blank"><img src="https://codecov.io/github/ssmereka/safeguard/coverage.svg?branch=master" /></a>
 
-# <a target="_blank" href="http://i.imgur.com/zKkNNBh.jpg">WAT</a><a target="_blank" href="http://i.imgur.com/yJreqHM.png">?</a>
-Crave gives you the ability to structure your application's files any way you like without the burden of manually requiring each file's location.  Take these file structures for example:
-
-
-
+# WAT?
 Safeguard makes cryptography easier in node.js by adding helpful functionality and simplifying the already existing [Cryto](https://nodejs.org/api/crypto.html) library.
 
 ## Example
@@ -130,3 +126,39 @@ safeguard.setError(error);
 
 # Configuration Object
 The following attributes can be included in the configuration object to override the default behavior of Safeguard.
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+| crypto | Object | n/a | Settings related to the node.js crypto library. |
+| crypto.iterations | Object | 10,000 | Number of times crypto iterates while hashing. |
+| crypto.keyLength | Object | 64 | Length of the text's hash value. |
+| crypto.saltLength | Object | 64 | Length of the hash's salt. |
+| log | Object | n/a | Settings related to the logger, [seedio-log](https://github.com/livio/seedio-log) |
+| log.error | Boolean | true | When true, error logs are displayed by the logger. |
+| log.databaseLog | Boolean | false | When true, logs are sent to the mongoose database. |
+| log.debug | Boolean | false | When true, debug logs are displayed by the logger. |
+| log.mongoose | Object | undefined | Stores a reference to your current mongoose object. |
+| log.name | String | "Safeguard" | Name used in logs by the logger. |
+| log.trace | Boolean | false | When true, trace logs are displayed by the logger. |
+
+**Note:**  Choose iterations to satisfy the formula [v-2^(n-1) > f-p](http://goo.gl/tPVs1M)
+
+
+## Example Default Config
+```javascript
+{
+  crypto: {
+    iterations: 10000,
+    keyLength: 64,
+    saltLength: 64
+  },
+  log: {
+    error: true,
+    databaseLog: false,
+    debug: false,
+    mongoose: undefined,
+    name: 'Safeguard',
+    trace: false
+  }
+}
+  ```
