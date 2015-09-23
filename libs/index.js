@@ -47,21 +47,44 @@ var Safeguard = function(config, log, error) {
  * ************************************************** */
 
 Safeguard.prototype.setConfig = function(config) {
-  this.config = config || {
-    crypto: {
-      iterations: 10000,
-      keyLength: 64,
-      saltLength: 64
-    },
-    log: {
-      error: true,
-      databaseLog: false,
-      debug: true,
-      mongoose: undefined,
-      name: 'seedio-security',
-      trace: false
+  if( ! this.config) {
+    this.config = {
+      crypto: {
+        iterations: 10000, 
+        keyLength: 128,
+        saltLength: 64
+      },
+      log: {
+        error: true,
+        databaseLog: false,
+        debug: false,
+        mongoose: undefined,
+        name: 'seedio-security',
+        trace: false
+      } 
+    };
+  }
+
+  if(config) {
+    if(config.crypto) {
+      this.config.crypto = {
+        iterations: config.crypto.iterations || this.config.crypto.iterations,
+        keyLength: config.crypto.keyLength || this.config.crypto.keyLength,
+        saltLength: config.crypto.saltLength || this.config.crypto.saltLength
+      }
     }
-  };
+
+    if(config.log) {
+      this.config.log = {
+        error: (config.log.error === true || config.log.error === false) ? config.log.error : this.config.log.error,
+        databaseLog: (config.log.databaseLog === true || config.log.databaseLog === false) ? config.log.databaseLog : this.config.log.databaseLog,
+        debug: (config.log.debug === true || config.log.debug === false) ? config.log.debug : this.config.log.debug,
+        mongoose: config.log.mongoose || this.config.log.mongoose,
+        name: config.log.name || this.config.log.name,
+        trace: (config.log.trace === true || config.log.trace === false) ? config.log.trace : this.config.log.trace,
+      }
+    }
+  }
 };
 
 Safeguard.prototype.setLog = function(log) {

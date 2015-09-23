@@ -22,7 +22,7 @@ var safeguardConfig = {
   log: {
     error: true,
     databaseLog: false,
-    debug: true,
+    debug: false,
     mongoose: undefined,
     name: 'seedio-security',
     trace: false
@@ -73,6 +73,32 @@ var validateHashPacketString = function(hashPacketString, text, cb, shouldNotMat
   });
 };
 
+var validateConfigAttributeUpdated = function(attribute, newValue) {
+  assert.notEqual(eval('safeguard.config.'+attribute), newValue);
+  
+  var config = {};
+  var split = attribute.split('.');
+  if(split.length > 1) {
+    config[split[0]] = {};
+  }
+  
+
+  if(_.isObject(newValue)) {
+    eval('config.'+attribute+'='+ JSON.stringify(newValue));
+    safeguard.setConfig(config);
+    //assert.deepEqual(eval('safeguard.config.'+attribute), newValue);
+    // TODO: fix this
+  } else if(_.isString(newValue)) {
+    eval('config.'+attribute+'="'+newValue+'"');
+    safeguard.setConfig(config);
+    assert.equal(eval('safeguard.config.'+attribute), newValue);
+  } else {
+    eval('config.'+attribute+'='+newValue);
+    safeguard.setConfig(config);
+    assert.equal(eval('safeguard.config.'+attribute), newValue);
+  }
+}
+
 
 /* ************************************************** *
  * ******************** Test Suite
@@ -96,7 +122,6 @@ describe('Safeguard', function() {
         }
       });
     });
-
 
     it('should work with variable key size', function(done) {
       var newSize = 128,
@@ -178,4 +203,22 @@ describe('Safeguard', function() {
 
   });
   
+
+  describe('Config', function() {
+
+    it('should merge crypto configuration objects', function(done) {
+      validateConfigAttributeUpdated('crypto.iterations', 22);
+      validateConfigAttributeUpdated('crypto.keyLength', 33);
+      validateConfigAttributeUpdated('crypto.saltLength', 5000);
+      validateConfigAttributeUpdated('log.error', false);
+      validateConfigAttributeUpdated('log.databaseLog', true);
+      validateConfigAttributeUpdated('log.debug', true);
+      validateConfigAttributeUpdated('log.mongoose', {});
+      validateConfigAttributeUpdated('log.name', "Awesome cool cool awesome");
+      validateConfigAttributeUpdated('log.trace', true);
+      done();
+    });
+
+  });
+
 });
