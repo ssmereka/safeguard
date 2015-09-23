@@ -1,0 +1,41 @@
+{
+  "author": {
+    "name": "Scott Smereka"
+  },
+  "bugs": {
+    "url": "http://github.com/ssmereka/safeguard/issues"
+  },
+  "contributors": [],
+  "dependencies": {
+    "lodash": "3.10.1"
+  },
+  "description": "Encapsulate and secure credentials easily with this wrapper for the node.js crypto library.",
+  "devDependencies": {
+  },
+  "engines": {
+    "node": ">=0.10"
+  },
+  "keywords": [
+    "crypto",
+    "wrapper",
+    "hash",
+    "hashing"
+  ],
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/ssmereka/safeguard/blob/master/license"
+    }
+  ],
+  "main": "./libs",
+  "name": "safeguard",
+  "private": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ssmereka/safeguard.git"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "version": "0.0.1"
+}
