@@ -12,23 +12,6 @@ var assert = require("assert"),
 
 var password = "my password string";
 
-var safeguardConfig = {
-  crypto: {
-    iterations: 10000,
-    keyLength: 64,
-    saltLength: 64
-  },
-  libsDirectory: "./",
-  log: {
-    error: true,
-    databaseLog: false,
-    debug: false,
-    mongoose: undefined,
-    name: 'seedio-security',
-    trace: false
-  }
-};
-
 
 /* ************************************************** *
  * ******************** Private Methods
@@ -124,13 +107,11 @@ describe('Safeguard', function() {
     });
 
     it('should work with variable key size', function(done) {
-      var newSize = 128,
-        config = JSON.parse(JSON.stringify(safeguardConfig));
+      var newSize = 256;
       
       // Make sure the new size different, then update the config.
-      assert.notEqual(config.crypto.keyLength, newSize);
-      config.crypto.keyLength = newSize;
-      safeguard.setConfig(config);
+      assert.notEqual(safeguard.config.crypto.keyLength, newSize);
+      safeguard.setConfig({ crypto: { keyLength: newSize } });
       assert.equal(safeguard.config.crypto.keyLength, newSize);
 
       safeguard.hasher(password, function(err, hashPacketString) {
@@ -143,13 +124,11 @@ describe('Safeguard', function() {
     });
 
     it('should work with variable salt size', function(done) {
-      var newSize = 128,
-        config = JSON.parse(JSON.stringify(safeguardConfig));
+      var newSize = 128;
       
       // Make sure the new size different, then update the config.
-      assert.notEqual(config.crypto.saltLength, newSize);
-      config.crypto.saltLength = newSize;
-      safeguard.setConfig(config);
+      assert.notEqual(safeguard.config.crypto.saltLength, newSize);
+      safeguard.setConfig({ crypto: { saltLength: newSize } });
       assert.equal(safeguard.config.crypto.saltLength, newSize);
 
       safeguard.hasher(password, function(err, hashPacketString) {
@@ -162,13 +141,11 @@ describe('Safeguard', function() {
     });
 
     it('should work with variable iteration size', function(done) {
-      var newSize = 50000,
-        config = JSON.parse(JSON.stringify(safeguardConfig));
+      var newSize = 50000;
       
       // Make sure the new size different, then update the config.
-      assert.notEqual(config.crypto.iterations, newSize);
-      config.crypto.iterations = newSize;
-      safeguard.setConfig(config);
+      assert.notEqual(safeguard.config.crypto.iterations, newSize);
+      safeguard.setConfig({ crypto: { iterations: newSize } });
       assert.equal(safeguard.config.crypto.iterations, newSize);
 
       safeguard.hasher(password, function(err, hashPacketString) {
@@ -180,7 +157,14 @@ describe('Safeguard', function() {
       });
     });
 
-    it('should generate a hash even when text is undefined', function(done) {
+    it('should generate a hash even when text is undefined if the defaultPlainTextLength is set', function(done) {
+      // Disable warning and error messages for this test.
+      safeguard.setLog({ error: false });
+
+      // Enable the default generation of text.
+      safeguard.setConfig({ crypto: { defaultPlainTextLength: 128 } });
+      assert.equal(safeguard.config.crypto.defaultPlainTextLength, 128);
+      
       safeguard.hasher(undefined, function(err, hashPacketString) {
         if(err) {
           done(err);
@@ -192,6 +176,13 @@ describe('Safeguard', function() {
     });
 
     it('should generate a hash even when text is blank', function(done) {
+      // Disable warning and error messages for this test.
+      safeguard.setLog({  error: false });
+
+      // Enable the default generation of text.
+      safeguard.setConfig({ crypto: { defaultPlainTextLength: 128 } });
+      assert.equal(safeguard.config.crypto.defaultPlainTextLength, 128);
+
       safeguard.hasher("", function(err, hashPacketString) {
         if(err) {
           done(err);
@@ -209,12 +200,7 @@ describe('Safeguard', function() {
       validateConfigAttributeUpdated('crypto.iterations', 22);
       validateConfigAttributeUpdated('crypto.keyLength', 33);
       validateConfigAttributeUpdated('crypto.saltLength', 5000);
-      validateConfigAttributeUpdated('log.error', false);
-      validateConfigAttributeUpdated('log.databaseLog', true);
-      validateConfigAttributeUpdated('log.debug', true);
-      validateConfigAttributeUpdated('log.mongoose', {});
-      validateConfigAttributeUpdated('log.name', "Awesome cool cool awesome");
-      validateConfigAttributeUpdated('log.trace', true);
+      validateConfigAttributeUpdated('crypto.defaultPlainTextLength', 5555);
       done();
     });
 
@@ -223,9 +209,51 @@ describe('Safeguard', function() {
   describe('setLog', function() {
 
     it('should accept a seedio-log instance', function(done) {
-      var log = new (require('seedio-log'))(safeguardConfig.log);
-      safeguard.setLog(log);
+      //TODO: Fix
+      var log = new (require('seedio-log'))({
+        error: true,
+        databaseLog: false,
+        debug: false,
+        mongoose: undefined,
+        name: 'blahblahblah',
+        trace: false
+      });
+      safeguard.setLog(undefined, log);
       assert.deepEqual(log, safeguard.log);
+      done();
+    });
+
+    it('should merge log configuration objects', function(done) {
+      // error
+      assert.notEqual(safeguard.log.error, false);
+      safeguard.setLog({ error: false });
+      assert.equal(safeguard.log.error, false);
+
+      // databaseLog
+      assert.notEqual(safeguard.log.databaseLog, true);
+      safeguard.setLog({ databaseLog: true });
+      assert.equal(safeguard.log.databaseLog, true);
+
+      // debug
+      assert.notEqual(safeguard.log.debug, true);
+      safeguard.setLog({ debug: true });
+      assert.equal(safeguard.log.debug, true);
+
+      // mongoose
+      //assert.notEqual(_.isEqual(safeguard.log.mongoose, {}), false);
+      //safeguard.setLog(safeguard.log, { mongoose: {} });
+      //assert.equal(_.isEqual(safeguard.log.mongoose, {}), true);
+
+      // name
+      assert.notEqual(safeguard.log.name, "Awesome cool cool awesome");
+      safeguard.setLog({ name: "Awesome cool cool awesome" });
+      assert.equal(safeguard.log.name, "Awesome cool cool awesome");
+
+      // trace
+      assert.notEqual(safeguard.log.trace, true);
+      safeguard.setLog({ trace: true });
+      assert.equal(safeguard.log.trace, true);
+
       done();
     });
 

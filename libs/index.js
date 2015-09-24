@@ -24,6 +24,7 @@ var Safeguard = function(config, log, error) {
     return new Safeguard(config, log, error);
   } else {
 
+    this.initalizeConfig();
     this.setConfig(config);
     this.setLog(log);
     this.setError(error);
@@ -46,64 +47,73 @@ var Safeguard = function(config, log, error) {
  * ******************** Getters and Setters
  * ************************************************** */
 
-Safeguard.prototype.setConfig = function(config) {
-  if( ! this.config) {
-    this.config = {
-      crypto: {
-        iterations: 10000, 
-        keyLength: 128,
-        saltLength: 64
-      },
-      log: {
-        error: true,
-        databaseLog: false,
-        debug: false,
-        mongoose: undefined,
-        name: 'seedio-security',
-        trace: false
-      } 
-    };
+var defaultConfig = {
+  crypto: {
+    defaultPlainTextLength: undefined,
+    iterations: 10000, 
+    keyLength: 128,
+    saltLength: 64
   }
+};
 
-  if(config) {
-    if(config.crypto) {
-      this.config.crypto = {
-        iterations: config.crypto.iterations || this.config.crypto.iterations,
-        keyLength: config.crypto.keyLength || this.config.crypto.keyLength,
-        saltLength: config.crypto.saltLength || this.config.crypto.saltLength
-      }
-    }
+var defaultLogConfig = {
+  error: true,
+  databaseLog: false,
+  debug: false,
+  mongoose: undefined,
+  name: 'seedio-security',
+  trace: false
+}
 
-    if(config.log) {
-      this.config.log = {
-        error: (config.log.error === true || config.log.error === false) ? config.log.error : this.config.log.error,
-        databaseLog: (config.log.databaseLog === true || config.log.databaseLog === false) ? config.log.databaseLog : this.config.log.databaseLog,
-        debug: (config.log.debug === true || config.log.debug === false) ? config.log.debug : this.config.log.debug,
-        mongoose: config.log.mongoose || this.config.log.mongoose,
-        name: config.log.name || this.config.log.name,
-        trace: (config.log.trace === true || config.log.trace === false) ? config.log.trace : this.config.log.trace,
+
+Safeguard.prototype.initalizeConfig = function() {
+  if( ! this.config) {
+    this.config = JSON.parse(JSON.stringify(defaultConfig));
+  }
+}
+
+Safeguard.prototype.setConfig = function(config) {
+  if( ! config || ! _.isObject(config)) {
+    this.config = JSON.parse(JSON.stringify(defaultConfig));
+  } else {
+    for(var key in config) {
+      for(var subObjectKey in config[key]) {
+        this.config[key][subObjectKey] = config[key][subObjectKey];
       }
     }
   }
 };
 
-Safeguard.prototype.setLog = function(log) {
+Safeguard.prototype.setLog = function(config, log) {
   if(log) {
     this.log = log;
+    if(config && _.isObject(config)) {
+      for(var key in config) {
+        this.log[key] = config[key];
+      }
+    }
   } else {
-    var seedioLog;
-    try {
-      seedioLog = require('seedio-log');
-      this.log = new (seedioLog)({
-        mongoose: this.config.log.mongoose,
-        debug: this.config.log.debug,
-        trace: this.config.log.trace,
-        error: this.config.log.error,
-        name: this.config.name,
-        databaseLog: this.config.databaseLog});
-    } catch(err) {
-      console.log('Error initializing the local library dependencies.  Do you need to run npm install?');
-      throw err;
+    var seedioLog,
+      logConfig = JSON.parse(JSON.stringify(defaultLogConfig));
+
+    if(config && _.isObject(config)) {
+      for(var key in config) {
+        logConfig[key] = config[key];
+      }
+    }
+
+    if( ! this.log) {
+      try {
+        seedioLog = require('seedio-log');
+        this.log = new (seedioLog)(logConfig);
+      } catch(err) {
+        console.log('Error initializing the local library dependencies.  Do you need to run npm install?');
+        throw err;
+      }
+    } else {
+      for(var key in logConfig) {
+        this.log[key] = logConfig[key];
+      }
     }
   }
 };
@@ -225,11 +235,16 @@ Safeguard.prototype.hasher = function(text, cb) {
   var hashPacket = safeguard.createDefaultHashPacket();
 
   // If the text is invalid (undefined, null, false, 0, or ""), then create a random string to hash.
-  if( ! text) {
-    try {
-      text = crypto.randomBytes(safeguard.config.crypto.plainTextSize);
-    } catch(err) {
-      return cb(err);
+  if( ! text || ! _.isString(text)) {
+    if(safeguard.config.crypto.defaultPlainTextLength) {
+      safeguard.log.w('safeguard.hasher():  The text value of "%s" (quotes exclusive) is invalid, defaulting to a random string.', text);
+      try {
+        text = crypto.randomBytes(safeguard.config.crypto.defaultPlainTextLength);
+      } catch(err) {
+        return cb(err);
+      }
+    } else {
+      return cb(safeguard.error.build('The text value of "'+text+'" (quotes exclusive) is invalid and cannot be hashed.', 500));
     }
   }
 
