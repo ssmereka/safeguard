@@ -192,6 +192,30 @@ describe('Safeguard', function() {
       });
     });
 
+    it('should generate an error when text is undefined and defaultPlainTextLength is not set', function(done) {
+      // Enable the default generation of text.
+      safeguard.setConfig({ crypto: { defaultPlainTextLength: undefined } });
+      assert.equal(safeguard.config.crypto.defaultPlainTextLength, undefined);
+      
+      safeguard.hasher(undefined, function(err, hashPacketString) {
+        assert.equal(err.message, "The text value of \"undefined\" (quotes exclusive) is invalid and cannot be hashed.");
+        assert.equal(err.status, 500);
+        done();
+      });
+    });
+
+    it('should generate an error when the crypto saltLength is invalid', function(done) {
+      // Enable the default generation of text.
+      safeguard.setConfig({ crypto: { saltLength: -1 } });
+      assert.equal(safeguard.config.crypto.saltLength, -1);
+      
+      safeguard.hasher(undefined, function(err, hashPacketString) {
+        assert.notEqual(err.message, undefined);
+        assert.equal(err.status, 500);
+        done();
+      });
+    });
+
   });
   
   describe('setConfig', function() {
@@ -256,6 +280,52 @@ describe('Safeguard', function() {
 
       done();
     });
+
+    /*  TODO:  Waiting on bug fix in seedio-log.
+    it('should merge log configuration objects on new instance', function(done) {
+      var seedioLog = require('seedio-log');
+      var log = new seedioLog({
+        error: true,
+        databaseLog: false,
+        debug: false,
+        mongoose: undefined,
+        name: 'blahblahblah',
+        trace: false
+      });
+
+      // error
+      assert.notEqual(safeguard.log.error, false);
+      safeguard.setLog({ error: false }, log);
+      assert.equal(safeguard.log.error, false);
+
+      // databaseLog
+      assert.notEqual(safeguard.log.databaseLog, true);
+      safeguard.setLog({ databaseLog: true }, log);
+      assert.equal(safeguard.log.databaseLog, true);
+
+      // debug
+      assert.notEqual(safeguard.log.debug, true);
+      safeguard.setLog({ debug: true }, log);
+      assert.equal(safeguard.log.debug, true);
+
+      // mongoose
+      //assert.notEqual(_.isEqual(safeguard.log.mongoose, {}), false);
+      //safeguard.setLog(safeguard.log, { mongoose: {} });
+      //assert.equal(_.isEqual(safeguard.log.mongoose, {}), true);
+
+      // name
+      assert.notEqual(safeguard.log.name, "Awesome cool cool awesome");
+      safeguard.setLog({ name: "Awesome cool cool awesome" }, log);
+      assert.equal(safeguard.log.name, "Awesome cool cool awesome");
+
+      // trace
+      assert.notEqual(safeguard.log.trace, true);
+      safeguard.setLog({ trace: true }, log);
+      assert.equal(safeguard.log.trace, true);
+
+      done();
+    });
+    */
 
   });
 
