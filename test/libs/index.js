@@ -209,9 +209,8 @@ describe('Safeguard', function() {
       safeguard.setConfig({ crypto: { saltLength: -1 } });
       assert.equal(safeguard.config.crypto.saltLength, -1);
       
-      safeguard.hasher(undefined, function(err, hashPacketString) {
+      safeguard.hasher("test", function(err, hashPacketString) {
         assert.notEqual(err.message, undefined);
-        assert.equal(err.status, 500);
         done();
       });
     });
