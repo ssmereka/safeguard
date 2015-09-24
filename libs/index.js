@@ -158,15 +158,15 @@ Safeguard.prototype.hashPacketStringToObject = function(hashPacketString, cb) {
   // If the hashPacketString is defined, then the hash string values
   // will overwrite the defaults.
   if( ! hashPacketString || ! _.isString(hashPacketString)) {
-    cb(error.build("Invalid Hash Packet:  Must be a defined string.  Returning default hash packet.", 500), obj);
+    cb(safeguard.error.build("Invalid Hash Packet:  Must be a defined string.  Returning default hash packet.", 500), obj);
   } else {
     var hashPacketItems = hashPacketString.split(','),  // Split the CVS string into an ordered list of items.
       headerLength = 3;  // A counter for the length of the hash header, initialized to include the three commas that exist in the header string.
 
-    // If the hash packet string does not have at least 5
+    // If the hash packet string does not have at least 4
     // items separated by commas then it is invalid.
     if(hashPacketItems.length < 4) {
-      cb(safeguard.error.build("Invalid Hash Packet:  Expected 5 items, but only "+hashPacketItems+" were found.  Returning default hash packet.", 500), obj);
+      cb(safeguard.error.build("Invalid Hash Packet:  Expected 4 items, but "+hashPacketItems.length+" were found.  Returning default hash packet.", 500), obj);
     } else {
 
       // Key length is the first parameter representing how long the
@@ -213,7 +213,7 @@ Safeguard.prototype.createDefaultHashPacket = function() {
 };
 
 /**
- * Hash a plain text string and return a hack packet string
+ * Hash a plain text string and return a hash packet string
  * that can be saved or compared to an existing hash.
  * @param {string} text is the plain text to be hashed.
  * @param {hashCallback} cb is a callback method.
@@ -256,7 +256,7 @@ Safeguard.prototype.hasher = function(text, cb) {
  */
 Safeguard.prototype.compareToHash = function(text, hashPacketString, cb) {
   // If the plain text is invalid, then return false.
-  if( ! text) {
+  if( ! text || ! _.isString(text)) {
     cb(undefined, false);
   } else {
     // Create a hash packet object from the string.

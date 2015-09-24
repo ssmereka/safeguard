@@ -82,12 +82,10 @@ var validateConfigAttributeUpdated = function(attribute, newValue) {
     config[split[0]] = {};
   }
   
-
   if(_.isObject(newValue)) {
     eval('config.'+attribute+'='+ JSON.stringify(newValue));
     safeguard.setConfig(config);
-    //assert.deepEqual(eval('safeguard.config.'+attribute), newValue);
-    // TODO: fix this
+    assert.equal(_.isEqual(eval('safeguard.config.'+attribute), newValue), true)
   } else if(_.isString(newValue)) {
     eval('config.'+attribute+'="'+newValue+'"');
     safeguard.setConfig(config);
@@ -107,7 +105,9 @@ var validateConfigAttributeUpdated = function(attribute, newValue) {
 describe('Safeguard', function() {
 
   beforeEach(function(done) {
-    safeguard.setConfig(safeguardConfig)
+    safeguard.setConfig()
+    safeguard.setLog()
+    safeguard.setError()
     done();
   });
 
@@ -204,7 +204,7 @@ describe('Safeguard', function() {
   });
   
 
-  describe('Config', function() {
+  describe('setConfig', function() {
 
     it('should merge crypto configuration objects', function(done) {
       validateConfigAttributeUpdated('crypto.iterations', 22);
@@ -217,6 +217,126 @@ describe('Safeguard', function() {
       validateConfigAttributeUpdated('log.name', "Awesome cool cool awesome");
       validateConfigAttributeUpdated('log.trace', true);
       done();
+    });
+
+  });
+
+  describe('setLog', function() {
+
+    it('should accept a seedio-log instance', function(done) {
+      var log = new (require('seedio-log'))(safeguardConfig.log);
+      safeguard.setLog(log);
+      assert.deepEqual(log, safeguard.log);
+      done();
+    });
+
+  });
+
+  describe('setError', function() {
+
+    it('should accept an error instance', function(done) {
+      var error =  {
+        build: function(message, code) {
+          var err = new Error(message);
+          return new Error(code + ": " + message);
+        }
+      };
+      safeguard.setError(error);
+      assert.deepEqual(error, safeguard.error);
+      done();
+    });
+
+  });
+
+  describe('hashPacketStringToObject', function() {
+
+    it('should return an error if the hashPacketString is invalid', function(done) {
+      var invalidPacketError = "Invalid Hash Packet:  Must be a defined string.  Returning default hash packet.",
+        invalidPacketErrorCode = 500;
+      
+      safeguard.hashPacketStringToObject(undefined, function(err, obj) {
+        assert.equal(err.message, invalidPacketError);
+        assert.equal(err.status, invalidPacketErrorCode);
+
+        safeguard.hashPacketStringToObject({}, function(err, obj) {
+          assert.equal(err.message, invalidPacketError);
+          assert.equal(err.status, invalidPacketErrorCode);
+
+          safeguard.hashPacketStringToObject(55, function(err, obj) {
+            assert.equal(err.message, invalidPacketError);
+            assert.equal(err.status, invalidPacketErrorCode);
+
+            safeguard.hashPacketStringToObject(NaN, function(err, obj) {
+              assert.equal(err.message, invalidPacketError);
+              assert.equal(err.status, invalidPacketErrorCode);
+              
+              safeguard.hashPacketStringToObject("", function(err, obj) {
+                assert.equal(err.message, invalidPacketError);
+                assert.equal(err.status, invalidPacketErrorCode);
+                
+                safeguard.hashPacketStringToObject(null, function(err, obj) {
+                  assert.equal(err.message, invalidPacketError);
+                  assert.equal(err.status, invalidPacketErrorCode);
+                  
+                  done();
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+
+    it('should return an error if the hashPacketString has an incorrect number of items', function(done) {
+      safeguard.hashPacketStringToObject("a,b,cd", function(err, obj) {
+        assert.equal(err.message, "Invalid Hash Packet:  Expected 4 items, but 3 were found.  Returning default hash packet.");
+        assert.equal(err.status, 500);
+
+        // More than 4 items is ok because the hash or salt may contain commas.
+        safeguard.hashPacketStringToObject("a,b,c,d,e", function(err, obj) {
+          assert.equal(err, undefined);
+
+          done();
+        });
+      });
+    });
+
+  });
+
+  describe('compareToHash', function() {
+
+    it('should return false if the text is invalid', function(done) {     
+      safeguard.compareToHash(undefined, undefined, function(err, result) {
+        assert.equal(err, undefined);
+        assert.equal(result, false);
+
+        safeguard.compareToHash({}, undefined, function(err, result) {
+          assert.equal(err, undefined);
+          assert.equal(result, false);
+
+          safeguard.compareToHash(65461, undefined, function(err, result) {
+            assert.equal(err, undefined);
+            assert.equal(result, false);
+
+            safeguard.compareToHash(NaN, undefined, function(err, result) {
+              assert.equal(err, undefined);
+              assert.equal(result, false);
+              
+              safeguard.compareToHash("", undefined, function(err, result) {
+                assert.equal(err, undefined);
+                assert.equal(result, false);
+                
+                safeguard.compareToHash(null, undefined, function(err, result) {
+                  assert.equal(err, undefined);
+                  assert.equal(result, false);
+                  
+                  done();
+                });
+              });
+            });
+          });
+        });
+      });
     });
 
   });
