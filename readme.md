@@ -59,17 +59,6 @@ security.compareToHash(text, hash, function(err, isMatch) {
 });
 ```
 
-## createRandomStringSync
-Create a random string of characters with a given length.
-
-| Parameter | Type | Description |
-| --------- | ---- | ----------- |
-| length | Number | The length of the generated string. |
-
-```javascript
-var randomString = safeguard.createRandomStringSync(length);
-```
-
 ## hasher
 Hash a plain text string
 
@@ -131,7 +120,7 @@ The following attributes can be included in the configuration object to override
 | --------- | ---- | ------- | ----------- |
 | crypto | Object | n/a | Settings related to the node.js crypto library. |
 | crypto.iterations | Object | 10,000 | Number of times crypto iterates while hashing. |
-| crypto.keyLength | Object | 64 | Length of the text's hash value. |
+| crypto.keyLength | Object | 128 | Length of the text's hash value. |
 | crypto.saltLength | Object | 64 | Length of the hash's salt. |
 | log | Object | n/a | Settings related to the logger, [seedio-log](https://github.com/livio/seedio-log) |
 | log.error | Boolean | true | When true, error logs are displayed by the logger. |

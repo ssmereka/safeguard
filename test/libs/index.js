@@ -203,7 +203,6 @@ describe('Safeguard', function() {
 
   });
   
-
   describe('setConfig', function() {
 
     it('should merge crypto configuration objects', function(done) {
@@ -336,6 +335,14 @@ describe('Safeguard', function() {
             });
           });
         });
+      });
+    });
+
+    it('should return false if hashPacketStringToObject errors', function(done) {
+      safeguard.compareToHash("abcde", undefined, function(err, result) {
+        assert.notEqual(err, undefined);
+        assert.equal(result, false);
+        done();
       });
     });
 

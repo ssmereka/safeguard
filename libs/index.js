@@ -226,12 +226,21 @@ Safeguard.prototype.hasher = function(text, cb) {
 
   // If the text is invalid (undefined, null, false, 0, or ""), then create a random string to hash.
   if( ! text) {
-    text = safeguard.createRandomStringSync(safeguard.config.crypto.plainTextSize)
+    try {
+      text = crypto.randomBytes(safeguard.config.crypto.plainTextSize);
+    } catch(err) {
+      return cb(err);
+    }
   }
 
   // Generate a new salt if one does not exist.
   if( ! hashPacket.salt) {
-    hashPacket.salt = safeguard.createRandomStringSync(hashPacket.saltLength/2).toString('hex');
+    try {
+      hashPacket.salt = crypto.randomBytes(hashPacket.saltLength/2);
+      hashPacket.salt = hashPacket.salt.toString('hex');
+    } catch(err) {
+      return cb(err);
+    }
   }
 
   // Hash the plain text using the hashPacket settings.
@@ -262,7 +271,7 @@ Safeguard.prototype.compareToHash = function(text, hashPacketString, cb) {
     // Create a hash packet object from the string.
     this.hashPacketStringToObject(hashPacketString, function(err, hashPacket) {
       if(err) {
-        cb(err);
+        cb(err, false);
       } else {
         // Encrypt the plain text using the same parameters as the stored hash.
         crypto.pbkdf2(text, hashPacket.salt, hashPacket.iterations, hashPacket.keyLength, function(err, hash) {
@@ -276,24 +285,6 @@ Safeguard.prototype.compareToHash = function(text, hashPacketString, cb) {
       }
     });
   }
-};
-
-/**
- * Create a random string of text of the given size.
- * If a length is not defined, the default length will be used.
- * @param {number|undefined} length is the length of the random string.
- * @returns {string} a random string of the given length.
- */
-Safeguard.prototype.createRandomStringSync = function(length) {
-  var text;
-  try {
-    text = crypto.randomBytes(length || 256);
-  } catch(err) {
-    log.e(err);
-    text = uuid.v4();
-  }
-
-  return text;
 };
 
 
