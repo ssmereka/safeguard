@@ -4,7 +4,8 @@
  * ************************************************** */
 
 var assert = require("assert"),
-    safeguard = require('../../libs/index.js')(),
+    Safeguard = require('../../libs/index.js')
+    safeguard = Safeguard(),
     fs = require("fs"),
     path = require("path"),
     should = require("should"),
@@ -192,8 +193,21 @@ describe('Safeguard', function() {
       });
     });
 
-    it('should generate an error when text is undefined and defaultPlainTextLength is not set', function(done) {
+    it('should generate an error when text is undefined and defaultPlainTextLength is invalid', function(done) {
+      // Disable warning and error messages for this test.
+      safeguard.setLog({  error: false });
+
       // Enable the default generation of text.
+      safeguard.setConfig({ crypto: { defaultPlainTextLength: -1 } });
+      assert.equal(safeguard.config.crypto.defaultPlainTextLength, -1);
+
+      safeguard.hasher("", function(err, hashPacketString) {
+        assert.notEqual(err.message, undefined);
+        done();
+      });
+    });
+
+    it('should generate an error when text is undefined and defaultPlainTextLength is not set', function(done) {
       safeguard.setConfig({ crypto: { defaultPlainTextLength: undefined } });
       assert.equal(safeguard.config.crypto.defaultPlainTextLength, undefined);
       
@@ -215,6 +229,34 @@ describe('Safeguard', function() {
       });
     });
 
+    it('should generate an error when the keyLength value is invalid', function(done) {
+      // Disable warning and error messages for this test.
+      safeguard.setLog({  error: false });
+
+      // Enable the default generation of text.
+      safeguard.setConfig({ crypto: { keyLength: -1 } });
+      assert.equal(safeguard.config.crypto.keyLength, -1);
+
+      safeguard.hasher("", function(err, hashPacketString) {
+        assert.notEqual(err.message, undefined);
+        done();
+      });
+    });
+
+    it('should generate an error when the iterations value is invalid', function(done) {
+      // Disable warning and error messages for this test.
+      safeguard.setLog({  error: false });
+
+      // Enable the default generation of text.
+      safeguard.setConfig({ crypto: { iterations: -1 } });
+      assert.equal(safeguard.config.crypto.iterations, -1);
+
+      safeguard.hasher("", function(err, hashPacketString) {
+        assert.notEqual(err.message, undefined);
+        done();
+      });
+    });
+
   });
   
   describe('setConfig', function() {
@@ -224,6 +266,12 @@ describe('Safeguard', function() {
       validateConfigAttributeUpdated('crypto.keyLength', 33);
       validateConfigAttributeUpdated('crypto.saltLength', 5000);
       validateConfigAttributeUpdated('crypto.defaultPlainTextLength', 5555);
+      done();
+    });
+
+    it('should be able to set config in the constructor', function(done) {
+      var sg = new Safeguard({ crypto: { iterations: 1234567890} });
+      assert.equal(sg.config.crypto.iterations, 1234567890);
       done();
     });
 
@@ -439,6 +487,14 @@ describe('Safeguard', function() {
       safeguard.compareToHash("abcde", undefined, function(err, result) {
         assert.notEqual(err, undefined);
         assert.equal(result, false);
+        done();
+      });
+    });
+
+    it('should return an error if the hashPacketString has invalid configurations', function(done) {
+      safeguard.compareToHash('blah', '2,-1,2,ABAB', function(err, isMatch) {
+        assert.notEqual(err, undefined);
+        assert.equal(isMatch, false);
         done();
       });
     });

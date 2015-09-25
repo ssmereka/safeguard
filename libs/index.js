@@ -244,15 +244,19 @@ Safeguard.prototype.compareToHash = function(text, hashPacketString, cb) {
       if(err) {
         cb(err, false);
       } else {
-        // Encrypt the plain text using the same parameters as the stored hash.
-        crypto.pbkdf2(text, hashPacket.salt, hashPacket.iterations, hashPacket.keyLength, function(err, hash) {
-          if(err || ! hash) {
-            cb(err, false);
-          } else {
-            // Return the hash comparison result.
-            cb(undefined, hash.toString('hex') == hashPacket.hash);
-          }
-        });
+        try {
+          // Encrypt the plain text using the same parameters as the stored hash.
+          crypto.pbkdf2(text, hashPacket.salt, hashPacket.iterations, hashPacket.keyLength, function(err, hash) {
+            if(err || ! hash) {
+              cb(err, false);
+            } else {
+              // Return the hash comparison result.
+              cb(undefined, hash.toString('hex') == hashPacket.hash);
+            }
+          });
+        } catch(err) {
+          cb(err, false);
+        }
       }
     });
   }
