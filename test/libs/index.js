@@ -445,4 +445,13 @@ describe('Safeguard', function() {
 
   });
 
+  describe('hashPacketObjectToString', function() {
+    
+    it('should return undefined if the hashPacketObject is invalid.', function(done) {
+      assert.equal(safeguard.hashPacketObjectToString(undefined), undefined);
+      done();
+    });
+
+  });
+
 });
