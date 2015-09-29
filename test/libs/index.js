@@ -231,7 +231,7 @@ describe('Safeguard', function() {
 
     it('should generate an error when the keyLength value is invalid', function(done) {
       // Disable warning and error messages for this test.
-      safeguard.setLog({  error: false });
+      safeguard.setLog({ error: false });
 
       // Enable the default generation of text.
       safeguard.setConfig({ crypto: { keyLength: -1 } });
